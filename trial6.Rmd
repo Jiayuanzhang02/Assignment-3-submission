@@ -1,0 +1,119 @@
+---
+title: "Assignment3"
+author: "Jiayuan Zhang"
+date: "April 14, 2019"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Homework 3
+## Investigate the data with Plots
+
+## Section 1 - Overall exploration
+This is a report of investigating federal R and D spending, climate spending, and energy spending data.
+
+I first plotted the data of the gcc spending of different departments in different year.This plot shows that gcc_spending varies a lot across the departments. The most obvisou thing is that NASA is the department with the largest gcc_spending.Overall, the plot shows an increased trend of the gcc_spending across the years.
+
+```{r warning = FALSE,message=FALSE,error=FALSE,echo=FALSE} 
+setwd('C:/Users/89175/Documents/URIstudy/DSP543/Assignment3')
+climate <- read.csv("climate_spending.csv")
+energy <- read.csv("energy_spending.csv")
+fed <- read.csv("fed_r_d_spending.csv")
+library(tidyverse)
+
+#Plot the gcc spending across year with different department
+ggplot(climate,aes(year,gcc_spending,color=department)) +
+  geom_line()+labs(title="GCC spending across years")
+```
+
+  In the next plot, I plot the energy spending of departments across the years. In this plot, we can see that the two departments that have the highest energy_spending are Atomic Energy Defense and Office of Science R&D. The plot also shows an increased trend of enegery_spending across the years.
+
+```{r warning = FALSE,message=FALSE,error=FALSE,echo=FALSE} 
+ggplot(energy,aes(year,energy_spending,color=department)) +
+  geom_line()+labs(title="Energy spending across years")
+
+```
+
+
+  The next plots show the data of the fed of departments across the years. Becasue except the research and development data,in which different departments have different budget across the year. The plot shows the budgets of departments across the years. However, in the data of Total Federal Government spending in inflation-adjusted (constant) dollars, we find that departments share the same value per year. This is the same to the data of Total Discretionary Federal Government spending in inflation-adjusted (constant) dollars and GDP. It is the reason why the last three plots only have one line.
+
+```{r warning = FALSE,message=FALSE,error=FALSE,echo=FALSE} 
+
+#Plot the rd_budget across year with different departments
+ggplot(fed,aes(year,rd_budget,color=department)) +
+  geom_line()+labs(title="R&D spending across years")
+
+#Plot the total_outlays across year with different departments
+ggplot(fed,aes(year,total_outlays,color=department)) +
+  geom_line()+labs(title="Total outlays across years")
+
+#Plot the discretionary_outlays acorss year with different departments
+ggplot(fed,aes(year,discretionary_outlays,color=department)) +
+  geom_line()+labs(title="Discretionary outlays across years")
+
+#Plot the gpd acorss year with different departments
+ggplot(fed,aes(year,gdp,color=department)) +
+  geom_line()+labs(title="GDP across years")
+
+```
+
+## Section 2 - Relationship between the gcc_spending and energy_spending
+
+In the next step, we are going to investigate the relationship between the gcc_spending and energy_spending. The data is generated from different department. Therefore we cannot combine these two data sets with department. Instead, we combine them with year. We want to investigate whether gcc_spending and energy_spending are related across the year. The plot below shows the relationship. 
+
+```{r warning = FALSE,message=FALSE,error=FALSE,echo=FALSE} 
+Department_C_E <- inner_join(climate,energy,by = "year")
+Department_C_E_F <- inner_join(Department_C_E,fed,by = "year")
+ggplot(Department_C_E_F,aes(gcc_spending,energy_spending)) +
+  geom_line()+labs(title="GCC spending vs energy spending")
+CEF.fit <- lm(Department_C_E_F$gcc_spending ~ Department_C_E_F$energy_spending)
+summary(CEF.fit)
+```
+
+  We can see from the plot that the data does not show a specific relationship between the two variables. We aslo run a regression with these two variables and the below are the regression results. The r-square is `r summary(CEF.fit)$r.square`, which is pretty low. The p-value is `r summary(CEF.fit)$coefficients[,"Pr(>|t|)"][2]`, which does not indicate any relationship between the variables. It makes sense because the gcc_spedning and energy_spending data come from different departments. We only combine them by year. 
+  
+## Section 3 - Relationship between rd_budget and gcc_spending  
+
+Since we cannot find the relationship between the energy_spedning and gcc_spending with different departments across the year. In the next step, we will work on the data set with same departments across the year. We combine the federal R&D data with climate data by deparment and year. The plot below shows the relationship between rd_budget and gcc_spending for three departments - NASA,NSF,and Interior.The plot shows that as the rd_budget increases, the gcc_spending also increases.  
+
+```{r warning = FALSE,message=FALSE,error=FALSE,echo=FALSE} 
+FEC <- inner_join(climate,fed,by = c("year","department"))
+ggplot(FEC,aes(rd_budget,gcc_spending)) +
+  geom_line()+labs(title="R&D budget vs GCC spending")+ geom_smooth(colour = "red",se = FALSE, method = "gam",formula = y ~ x)
+```
+
+We take a closer look at the relationship by seperating the years. 
+
+```{r warning = FALSE,message=FALSE,error=FALSE,echo=FALSE} 
+ggplot(FEC,aes(rd_budget,gcc_spending)) +
+  geom_line()+facet_wrap(~ year)+labs(title="R&D budget vs GCC spending")
+FEC.fit <- lm(FEC$rd_budget ~ FEC$gcc_spending)
+summary(FEC.fit)
+```
+
+The plots show the relationship between rd_budget and gcc_spending in different years. They show that these two variables are positive related even  in different years. We then run a regression between these two variables. The regression summary is provided above and the r-square is `r summary(FEC.fit)$r.square` and p-value is  `r summary(FEC.fit)$coefficients[,"Pr(>|t|)"][2]`. The r-square is `r summary(FEC.fit)$r.square`, which is pretty high, and the p-value `r summary(FEC.fit)$coefficients[,"Pr(>|t|)"][2]` also indicates that the relationship is significant. The coefficient is `r summary(FEC.fit)$coefficient[2]`, whose magnitude is positive. In this section, we conclude that rd_budget is positively related with gcc_spending.
+
+## Section 4 What drive GDP?
+
+In this section, we will investigate the factors that drive GDP growth. We will work on the data set combined from federal R and D spending and climate spending. In this data set, we have variables Research and Development Dollars in inflation-adjusted (constant) dollars, Total Federal Government spending in inflation-adjusted (constant) dollars, Total Discretionary Federal Government spending in inflation-adjusted (constant) dollars, Research and Development Dollars in inflation-adjusted (constant) dollars, and GDP. We plan to run a regression on these variables. From section 3 we know that rd_budget is highly positively realted to gcc_spending. In this case we will ignore the rd-budget. If we don't remove correlated variables within the regression model, the assumption of indepence will be violated.Below is the summary of the regression. 
+
+```{r warning = FALSE,message=FALSE,error=FALSE,echo=FALSE} 
+GDP.fit <- lm(FEC$gdp ~ FEC$rd_budget+FEC$total_outlays+FEC$discretionary_outlays)
+summary(GDP.fit)
+```
+
+The coefficient of rd_budget is `r summary(GDP.fit)$coefficient[2]`, with p-value `r summary(GDP.fit)$coefficient[2,4]`.The coefficient of total_outlays is `r summary(GDP.fit)$coefficient[3]`, with p-value `r summary(GDP.fit)$coefficient[3,4]`. The coefficient of discretionary_outlays is `r summary(GDP.fit)$coefficient[4]`, with p-value `r summary(GDP.fit)$coefficient[4,4]`. The r-square is `r summary(GDP.fit)$r.square`, with p-value `r lmp <- function (modelobject) {
+  if (class(modelobject) != "lm") stop("Not an object of class 'lm' ")
+  f <- summary(modelobject)$fstatistic
+  p <- pf(f[1],f[2],f[3],lower.tail=F)
+  attributes(p) <- NULL
+  return(p)
+  }
+lmp(GDP.fit)`. We see that R and D spending has positve impact on GDP. Total federal government spending also has positive impact on GDP. However, total discretionary federal government spending has negative impact on GDP. 
+
