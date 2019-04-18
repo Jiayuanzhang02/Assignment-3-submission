@@ -1,3 +1,3 @@
 # Assignment-3-submission
 
-This is the homework submission due by Apr 21st. 
+Attached are the HTML file and the R markdown files for the assignment 3.
